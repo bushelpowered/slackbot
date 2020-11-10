@@ -28,6 +28,13 @@ func newBot() *Bot {
 	return NewBot(tokenVal, signingSecretVal)
 }
 
+func TestGetApi(t *testing.T) {
+	bot := newBot()
+	api := bot.Api()
+
+	assert.NotEmpty(t, api)
+}
+
 func TestSetLogger(t *testing.T) {
 	bot := newBot()
 
@@ -55,13 +62,13 @@ func TestGetLoggerReturnsSetLogger(t *testing.T) {
 func TestRegisterCommand(t *testing.T) {
 	bot := newBot()
 
-	test1Callback := func(b *Bot, command slack.SlashCommand) (*slack.Msg) {
+	test1Callback := func(b *Bot, command slack.SlashCommand) *slack.Msg {
 		return nil
 	}
 	bot.RegisterCommand("command1", test1Callback)
 	assert.Equal(t, reflect.ValueOf(test1Callback).Pointer(), reflect.ValueOf(bot.commands["command1"]).Pointer())
 
-	test2Callback := func(b *Bot, command slack.SlashCommand) (*slack.Msg) {
+	test2Callback := func(b *Bot, command slack.SlashCommand) *slack.Msg {
 		return nil
 	}
 	bot.RegisterCommand("command2", test2Callback)

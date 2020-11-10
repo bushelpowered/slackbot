@@ -161,12 +161,7 @@ func (b *Bot) BootWithEngine(listenAddr string, engine *gin.Engine) error {
 		return ErrAlreadyBooted
 	}
 
-	engine.Use(ginlogrus.Logger(b.getLogger()))
-
-	slackGroup := engine.Group("/slack")
-	slackGroup.Use(b.newSlackVerifierMiddleware())
-
-	b.wireCallbacks(slackGroup)
+	b.prepareEngine(engine, true)
 
 	b.server = &http.Server{
 		Addr:    listenAddr,
@@ -182,6 +177,17 @@ func (b *Bot) BootWithEngine(listenAddr string, engine *gin.Engine) error {
 	return nil
 }
 
+func (b *Bot) prepareEngine(engine *gin.Engine, verify bool) {
+	engine.Use(ginlogrus.Logger(b.getLogger()))
+
+	slackGroup := engine.Group("/slack")
+	if verify {
+		slackGroup.Use(b.newSlackVerifierMiddleware())
+	}
+
+	b.wireCallbacks(slackGroup)
+}
+
 func (b *Bot) wireCallbacks(group *gin.RouterGroup) {
 	b.wireCommands(group)
 	b.wireEvents(group)
@@ -192,7 +198,7 @@ func (b *Bot) wireCallbacks(group *gin.RouterGroup) {
 func (b *Bot) wireCommands(group *gin.RouterGroup) {
 	for name, callback := range b.commands {
 		b.getLogger().Infof("Wired command \"%s\" to %s/commands/%s", name, group.BasePath(), name)
-		group.POST("/commands/" + name, b.newCommandHandler(callback))
+		group.POST("/commands/"+name, b.newCommandHandler(callback))
 	}
 }
 
