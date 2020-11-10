@@ -6,6 +6,7 @@ import (
 	"github.com/slack-go/slack/slackevents"
 	"net/http"
 	"reflect"
+	"regexp"
 	"testing"
 	"time"
 )
@@ -94,13 +95,14 @@ func TestRegisterEvent(t *testing.T) {
 func TestRegisterKeyword(t *testing.T) {
 	bot := newBot()
 
-	bot.RegisterKeyword("keyword", func(b *Bot, command slackevents.MessageEvent) {})
+	keyword, _ := regexp.Compile("keyword")
+	bot.RegisterKeyword(keyword, func(b *Bot, command slackevents.MessageEvent) {})
 
 	assert.Equal(t, 1, len(bot.events[slackevents.Message]))
 }
 
 func TestKeywordCallbackMatch(t *testing.T) {
-	keyword := "keyword"
+	keyword, _ := regexp.Compile("keyword")
 	text := "this text contains the keyword"
 
 	matched := false
@@ -114,7 +116,7 @@ func TestKeywordCallbackMatch(t *testing.T) {
 }
 
 func TestKeywordCallbackMiss(t *testing.T) {
-	keyword := "keyword"
+	keyword, _ := regexp.Compile("keyword")
 	text := "this text does not contain the special word"
 
 	matched := false
@@ -125,20 +127,6 @@ func TestKeywordCallbackMiss(t *testing.T) {
 	callback(newBot(), newMessageEvent(text))
 
 	assert.False(t, matched)
-}
-
-func TestKeywordCallbackIsCaseInsensitive(t *testing.T) {
-	keyword := "Keyword"
-	text := "this text contains the keyWorD"
-
-	matched := false
-	callback := newKeywordEventCallback(keyword, func(b *Bot, command slackevents.MessageEvent) {
-		matched = true
-	})
-
-	callback(newBot(), newMessageEvent(text))
-
-	assert.True(t, matched)
 }
 
 func newMessageEvent(text string) slackevents.EventsAPIEvent {

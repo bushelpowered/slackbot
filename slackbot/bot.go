@@ -7,7 +7,7 @@ import (
 	"github.com/slack-go/slack"
 	"github.com/toorop/gin-logrus"
 	"net/http"
-	"strings"
+	"regexp"
 	"sync"
 	"time"
 )
@@ -15,7 +15,7 @@ import "github.com/slack-go/slack/slackevents"
 
 type CommandCallback = func(bot *Bot, command slack.SlashCommand) *slack.Msg
 type EventCallback = func(bot *Bot, event slackevents.EventsAPIEvent)
-type KeywordCallback = func(abot *Bot, command slackevents.MessageEvent)
+type KeywordCallback = func(bot *Bot, command slackevents.MessageEvent)
 type InteractiveCallback = func(bot *Bot, interaction slack.InteractionCallback)
 type SelectMenuOptionsCallback = func(bot *Bot) slack.OptionsResponse
 type SelectMenuOptionsGroupCallback = func(bot *Bot) slack.OptionGroupsResponse
@@ -89,17 +89,17 @@ func (b *Bot) RegisterEvent(eventType string, callback EventCallback) {
 	b.events[eventType] = append(b.events[eventType], callback)
 }
 
-func (b *Bot) RegisterKeyword(keyword string, callback KeywordCallback) {
-	b.getLogger().Debugf("RegisterKeyword %s", keyword)
+func (b *Bot) RegisterKeyword(regex *regexp.Regexp, callback KeywordCallback) {
+	b.getLogger().Debugf("RegisterKeyword %s", regex)
 
-	b.RegisterEvent(slackevents.Message, newKeywordEventCallback(keyword, callback))
+	b.RegisterEvent(slackevents.Message, newKeywordEventCallback(regex, callback))
 }
 
-func newKeywordEventCallback(keyword string, callback KeywordCallback) EventCallback {
+func newKeywordEventCallback(regex *regexp.Regexp, callback KeywordCallback) EventCallback {
 	return func(b *Bot, event slackevents.EventsAPIEvent) {
 		switch ev := event.InnerEvent.Data.(type) {
 		case *slackevents.MessageEvent:
-			if strings.Contains(strings.ToLower(ev.Text), strings.ToLower(keyword)) {
+			if regex.FindString(ev.Text) != "" {
 				callback(b, *ev)
 			}
 		}
