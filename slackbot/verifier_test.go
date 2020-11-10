@@ -21,7 +21,7 @@ func TestSlackVerifierReturnsServerErrorWhenSecretsVerifierFailsInitialization(t
 	engine := gin.New()
 	engine.Use(bot.newSlackVerifierMiddleware())
 	engine.POST("/test", func(context *gin.Context) {
-		context.Render(200, render.Data{ContentType: "application/json; charset=utf-8", Data: []byte("")})
+		context.Render(http.StatusOK, render.Data{ContentType: "application/json; charset=utf-8", Data: []byte("")})
 	})
 
 	e := getHttpExpect(t, engine)
@@ -53,7 +53,7 @@ func TestSlackVerifierSucceedsWhenSignaturesMatch(t *testing.T) {
 	engine := gin.New()
 	engine.Use(bot.newSlackVerifierMiddleware())
 	engine.POST("/test", func(context *gin.Context) {
-		context.Status(200)
+		context.Status(http.StatusOK)
 	})
 
 	// make a request with valid signature headers
@@ -86,7 +86,7 @@ func TestSlackVerifierReturnsUnauthorizedErrorWhenSignaturesDoNotMatch(t *testin
 	engine := gin.New()
 	engine.Use(bot.newSlackVerifierMiddleware())
 	engine.POST("/test", func(context *gin.Context) {
-		context.Status(200)
+		context.Status(http.StatusOK)
 	})
 
 	// make a request with valid signature headers

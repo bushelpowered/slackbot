@@ -203,7 +203,8 @@ func (b *Bot) wireCommands(group *gin.RouterGroup) {
 }
 
 func (b *Bot) wireEvents(group *gin.RouterGroup) {
-
+	b.getLogger().Infof("Wired events %s/events", group.BasePath())
+	group.POST("/events", b.newEventHandler(b.events))
 }
 
 func (b *Bot) wireInteractives(group *gin.RouterGroup) {

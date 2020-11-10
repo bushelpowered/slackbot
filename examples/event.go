@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slackevents"
 	"os"
 	"os/signal"
 	"slackbot/slackbot"
@@ -13,8 +13,8 @@ import (
 func main() {
 	bot := slackbot.NewBot("bot token", "signing secret")
 
-	// register commands
-	bot.RegisterCommand("test", testCommandHandler)
+	// register events
+	bot.RegisterEvent(slackevents.AppMention, testAppMentionHandler)
 
 	// boot the bot
 	err := bot.Boot(":8000")
@@ -32,7 +32,7 @@ func main() {
 	logrus.Infoln("Shutting down...")
 }
 
-func testCommandHandler(bot *slackbot.Bot, command slack.SlashCommand) *slack.Msg {
-	logrus.Info(command)
-	return &slack.Msg{Text: "Hello World!"} // return nil to not post a message
+func testAppMentionHandler(bot *slackbot.Bot, event slackevents.EventsAPIEvent) {
+	appMentionEvent := event.InnerEvent.Data.(*slackevents.AppMentionEvent)
+	logrus.Infoln(appMentionEvent)
 }

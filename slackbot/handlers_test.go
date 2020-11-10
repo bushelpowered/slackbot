@@ -3,7 +3,10 @@ package slackbot
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slackevents"
+	"github.com/stretchr/testify/assert"
 	"net/http"
+	"reflect"
 	"testing"
 )
 
@@ -54,4 +57,151 @@ func TestCommandHandlerWithInvalidRequest(t *testing.T) {
 	e.POST("/slack/commands/test").
 		Expect().
 		Status(http.StatusBadRequest)
+}
+
+func TestEventHandlerErrorsWithNoContent(t *testing.T) {
+	engine := gin.New()
+
+	bot := newBot()
+	bot.RegisterEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
+
+	})
+	bot.prepareEngine(engine, false)
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/events").
+		Expect().
+		Status(http.StatusBadRequest).NoContent()
+}
+
+func TestEventHandlerUrlVerification(t *testing.T) {
+	var challengeString = "challenge"
+
+	engine := gin.New()
+
+	bot := newBot()
+	bot.RegisterEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
+
+	})
+	bot.prepareEngine(engine, false)
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/events").
+		WithJSON(slackevents.EventsAPIURLVerificationEvent{
+			Token:     "token",
+			Challenge: challengeString,
+			Type:      slackevents.URLVerification,
+		}).
+		Expect().
+		Status(http.StatusOK).Text().Equal(challengeString)
+}
+
+func TestEventHandlerSingleCallback(t *testing.T) {
+	hitCallbackOne := false
+
+	engine := gin.New()
+
+	bot := newBot()
+	bot.RegisterEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
+		hitCallbackOne = true
+	})
+	bot.prepareEngine(engine, false)
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/events").
+		WithJSON(newFakeEvent(slackevents.AppMention)).
+		Expect().
+		Status(http.StatusOK).NoContent()
+
+	assert.True(t, hitCallbackOne)
+}
+
+func TestEventHandlerHitsAllCallbacksOfTheSameType(t *testing.T) {
+	hitCallbackOne := false
+	hitCallbackTwo := false
+
+	engine := gin.New()
+
+	bot := newBot()
+	bot.RegisterEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
+		hitCallbackOne = true
+	})
+	bot.RegisterEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
+		hitCallbackTwo = true
+	})
+	bot.prepareEngine(engine, false)
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/events").
+		WithJSON(newFakeEvent(slackevents.AppMention)).
+		Expect().
+		Status(http.StatusOK).NoContent()
+
+	assert.True(t, hitCallbackOne)
+	assert.True(t, hitCallbackTwo)
+}
+
+func TestEventHandlerHitsCorrectCallback(t *testing.T) {
+	hitCallbackOne := false
+	hitCallbackTwo := false
+
+	engine := gin.New()
+
+	bot := newBot()
+	bot.RegisterEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
+		hitCallbackOne = true
+	})
+	bot.RegisterEvent(slackevents.Message, func(bot *Bot, event slackevents.EventsAPIEvent) {
+		hitCallbackTwo = true
+	})
+	bot.prepareEngine(engine, false)
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/events").
+		WithJSON(newFakeEvent(slackevents.AppMention)).
+		Expect().
+		Status(http.StatusOK).NoContent()
+
+	assert.True(t, hitCallbackOne)
+	assert.False(t, hitCallbackTwo)
+}
+
+func TestEventHandlerRateLimited(t *testing.T) {
+	engine := gin.New()
+
+	bot := newBot()
+	bot.prepareEngine(engine, false)
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/events").
+		WithJSON(slackevents.EventsAPIAppRateLimited{Type: slackevents.AppRateLimited}).
+		Expect().
+		Status(http.StatusOK).NoContent()
+}
+
+func newFakeEvent(eventType string) fakeEvent {
+	return newFakeEventWithData(eventType, nil)
+}
+
+func newFakeEventWithData(eventType string, event interface{}) fakeEvent {
+	if event == nil {
+		event = slackevents.EventsAPIInnerEventMapping[eventType]
+	}
+
+	// set the type field
+	v := reflect.ValueOf(&event).Elem()
+	tmp := reflect.New(v.Elem().Type()).Elem()
+	tmp.Set(v.Elem())
+	tmp.FieldByName("Type").SetString(eventType)
+	v.Set(tmp)
+
+	return fakeEvent{
+		Type:  slackevents.CallbackEvent,
+		Event: event,
+	}
+}
+
+type fakeEvent struct {
+	Type  string      `json:"type"`
+	Event interface{} `json:"event"`
 }
