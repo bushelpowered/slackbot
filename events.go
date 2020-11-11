@@ -40,11 +40,11 @@ func generateEvents() {
 		logrus.WithError(err).Fatalln("Failed to parse events template")
 	}
 	err = tpl.Execute(f, struct {
-		Timestamp time.Time
-		EventTypes     EventTypes
+		Timestamp  time.Time
+		EventTypes EventTypes
 	}{
-		Timestamp: time.Now(),
-		EventTypes:     eventTypes,
+		Timestamp:  time.Now(),
+		EventTypes: eventTypes,
 	})
 	if err != nil {
 		logrus.WithError(err).Fatalln("Failed to execute events template")
