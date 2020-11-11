@@ -1,9 +1,5 @@
-// The following directive is necessary to make the package coherent:
-
 // +build ignore
 
-// This program generates contributors.go. It can be invoked by running
-// go generate
 package main
 
 import (
@@ -18,10 +14,6 @@ import (
 type EventTypes = map[string]string
 
 func main() {
-	generateEvents()
-}
-
-func generateEvents() {
 	eventTypes := make(EventTypes, len(slackevents.EventsAPIInnerEventMapping))
 	for name, event := range slackevents.EventsAPIInnerEventMapping {
 		reflection := reflect.ValueOf(event)
