@@ -10,10 +10,6 @@ import (
 
 func (b *Bot) newSlackVerifierMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		logger := b.Logger().WithField("handler", "slackVerifier")
-
-		logger.Debug("Verifying slack request signature")
-
 		verifier, err := slack.NewSecretsVerifier(c.Request.Header, b.signingSecret)
 		if err != nil {
 			_ = c.AbortWithError(http.StatusInternalServerError, err)
