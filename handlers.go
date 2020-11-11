@@ -36,13 +36,13 @@ func (b *Bot) newEventHandler(callbacks map[string][]EventCallback) gin.HandlerF
 	return func(c *gin.Context) {
 		body, err := ioutil.ReadAll(c.Request.Body)
 		if err != nil {
-			c.AbortWithError(http.StatusBadRequest, err)
+			_ = c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
 
 		event, err := slackevents.ParseEvent(body, slackevents.OptionNoVerifyToken()) // verification handled by middleware
 		if err != nil {
-			c.AbortWithError(http.StatusBadRequest, err)
+			_ = c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
 
@@ -50,7 +50,7 @@ func (b *Bot) newEventHandler(callbacks map[string][]EventCallback) gin.HandlerF
 			var r *slackevents.ChallengeResponse
 			err := json.Unmarshal(body, &r)
 			if err != nil {
-				c.AbortWithError(http.StatusBadRequest, err)
+				_ = c.AbortWithError(http.StatusBadRequest, err)
 				return
 			}
 			c.Data(http.StatusOK, "text/plain", []byte(r.Challenge))

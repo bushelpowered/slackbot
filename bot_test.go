@@ -48,7 +48,7 @@ func TestSetLogger(t *testing.T) {
 func TestGetLoggerReturnsStandardLoggerWhenUnset(t *testing.T) {
 	bot := newBot()
 
-	assert.Equal(t, logrus.StandardLogger(), bot.getLogger())
+	assert.Equal(t, logrus.StandardLogger(), bot.Logger())
 }
 
 func TestGetLoggerReturnsSetLogger(t *testing.T) {
@@ -57,7 +57,7 @@ func TestGetLoggerReturnsSetLogger(t *testing.T) {
 	newLogger := logrus.New()
 	bot.SetLogger(newLogger)
 
-	assert.Equal(t, newLogger, bot.getLogger())
+	assert.Equal(t, newLogger, bot.Logger())
 }
 
 func TestRegisterCommand(t *testing.T) {
@@ -96,7 +96,7 @@ func TestRegisterKeyword(t *testing.T) {
 	bot := newBot()
 
 	keyword, _ := regexp.Compile("keyword")
-	bot.RegisterKeyword(keyword, func(b *Bot, command slackevents.MessageEvent) {})
+	bot.RegisterKeyword(keyword, func(b *Bot, event MessageEventContainer) {})
 
 	assert.Equal(t, 1, len(bot.events[slackevents.Message]))
 }
@@ -106,7 +106,7 @@ func TestKeywordCallbackMatch(t *testing.T) {
 	text := "this text contains the keyword"
 
 	matched := false
-	callback := newKeywordEventCallback(keyword, func(b *Bot, command slackevents.MessageEvent) {
+	callback := newKeywordEventCallback(keyword, func(b *Bot, event MessageEventContainer) {
 		matched = true
 	})
 
@@ -120,7 +120,7 @@ func TestKeywordCallbackMiss(t *testing.T) {
 	text := "this text does not contain the special word"
 
 	matched := false
-	callback := newKeywordEventCallback(keyword, func(b *Bot, command slackevents.MessageEvent) {
+	callback := newKeywordEventCallback(keyword, func(b *Bot, event MessageEventContainer) {
 		matched = true
 	})
 

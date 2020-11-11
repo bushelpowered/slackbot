@@ -2,19 +2,18 @@ package main
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/slack-go/slack/slackevents"
 	"os"
 	"os/signal"
-	"slackbot/slackbot"
+	"slackbot"
 	"syscall"
 )
 
-// Boot a bot with a slash command that echos Hello World!
+// Boot a bot that listens for app mention events
 func main() {
-	bot := slackbot.NewBot("bot token", "signing secret")
+	bot := slackbot.NewBot(os.Getenv("SLACK_TOKEN"), os.Getenv("SLACK_SIGNING_SECRET"))
 
 	// register events
-	bot.RegisterEvent(slackevents.AppMention, testAppMentionHandler)
+	bot.RegisterAppMentionEvent(testAppMentionHandler)
 
 	// boot the bot
 	err := bot.Boot(":8000")
@@ -32,7 +31,6 @@ func main() {
 	logrus.Infoln("Shutting down...")
 }
 
-func testAppMentionHandler(bot *slackbot.Bot, event slackevents.EventsAPIEvent) {
-	appMentionEvent := event.InnerEvent.Data.(*slackevents.AppMentionEvent)
-	logrus.Infoln(appMentionEvent)
+func testAppMentionHandler(bot *slackbot.Bot, c slackbot.AppMentionEventContainer) {
+	logrus.Infoln(c.Event)
 }

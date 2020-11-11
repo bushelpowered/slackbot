@@ -2,17 +2,16 @@ package main
 
 import (
 	"github.com/sirupsen/logrus"
-	"github.com/slack-go/slack/slackevents"
 	"os"
 	"os/signal"
 	"regexp"
-	"slackbot/slackbot"
+	"slackbot"
 	"syscall"
 )
 
-// Boot a bot with a slash command that echos Hello World!
+// Boot a bot that listens for the keyword "fire"
 func main() {
-	bot := slackbot.NewBot("bot token", "signing secret")
+	bot := slackbot.NewBot(os.Getenv("SLACK_TOKEN"), os.Getenv("SLACK_SIGNING_SECRET"))
 
 	// register keywords
 	keyword, _ := regexp.Compile("(?i)fire") // case insensitive "fire"
@@ -34,6 +33,6 @@ func main() {
 	logrus.Infoln("Shutting down...")
 }
 
-func testKeywordHandler(bot *slackbot.Bot, command slackevents.MessageEvent) {
-	logrus.Infoln(command.Text)
+func testKeywordHandler(bot *slackbot.Bot, container slackbot.MessageEventContainer) {
+	logrus.Infoln(container.Event.Text)
 }

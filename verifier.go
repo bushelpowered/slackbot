@@ -10,7 +10,7 @@ import (
 
 func (b *Bot) newSlackVerifierMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		logger := b.getLogger().WithField("handler", "slackVerifier")
+		logger := b.Logger().WithField("handler", "slackVerifier")
 
 		logger.Debug("Verifying slack request signature")
 

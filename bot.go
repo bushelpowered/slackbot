@@ -5,17 +5,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slackevents"
 	"github.com/toorop/gin-logrus"
 	"net/http"
 	"regexp"
 	"sync"
 	"time"
 )
-import "github.com/slack-go/slack/slackevents"
+
+//go:generate go run events.go
 
 type CommandCallback = func(bot *Bot, command slack.SlashCommand) *slack.Msg
 type EventCallback = func(bot *Bot, event slackevents.EventsAPIEvent)
-type KeywordCallback = func(bot *Bot, command slackevents.MessageEvent)
+type KeywordCallback = func(bot *Bot, command MessageEventContainer)
 type InteractiveCallback = func(bot *Bot, interaction slack.InteractionCallback)
 type SelectMenuOptionsCallback = func(bot *Bot) slack.OptionsResponse
 type SelectMenuOptionsGroupCallback = func(bot *Bot) slack.OptionGroupsResponse
@@ -46,7 +48,7 @@ func (b *Bot) Api() *slack.Client {
 	return slack.New(b.token)
 }
 
-func (b *Bot) getLogger() *logrus.Logger {
+func (b *Bot) Logger() *logrus.Logger {
 	if b.logger == nil {
 		b.Lock()
 		defer b.Unlock()
@@ -65,7 +67,7 @@ func (b *Bot) SetLogger(logger *logrus.Logger) {
 }
 
 func (b *Bot) RegisterCommand(name string, callback CommandCallback) {
-	b.getLogger().Debugf("RegisterCommand %s", name)
+	b.Logger().Debugf("RegisterCommand %s", name)
 
 	b.Lock()
 	defer b.Unlock()
@@ -78,7 +80,7 @@ func (b *Bot) RegisterCommand(name string, callback CommandCallback) {
 }
 
 func (b *Bot) RegisterEvent(eventType string, callback EventCallback) {
-	b.getLogger().Debugf("RegisterEvent %s", eventType)
+	b.Logger().Debugf("RegisterEvent %s", eventType)
 
 	b.Lock()
 	defer b.Unlock()
@@ -90,7 +92,7 @@ func (b *Bot) RegisterEvent(eventType string, callback EventCallback) {
 }
 
 func (b *Bot) RegisterKeyword(regex *regexp.Regexp, callback KeywordCallback) {
-	b.getLogger().Debugf("RegisterKeyword %s", regex)
+	b.Logger().Debugf("RegisterKeyword %s", regex)
 
 	b.RegisterEvent(slackevents.Message, newKeywordEventCallback(regex, callback))
 }
@@ -100,14 +102,14 @@ func newKeywordEventCallback(regex *regexp.Regexp, callback KeywordCallback) Eve
 		switch ev := event.InnerEvent.Data.(type) {
 		case *slackevents.MessageEvent:
 			if regex.FindString(ev.Text) != "" {
-				callback(b, *ev)
+				callback(b, MessageEventContainer{APIEvent: event, Event: *ev})
 			}
 		}
 	}
 }
 
 func (b *Bot) RegisterInteractive(interactionType slack.InteractionType, filterId string, callback InteractiveCallback) {
-	b.getLogger().Debugf("RegisterInteractive %s:%s", interactionType, filterId)
+	b.Logger().Debugf("RegisterInteractive %s:%s", interactionType, filterId)
 
 	b.Lock()
 	defer b.Unlock()
@@ -122,13 +124,13 @@ func (b *Bot) RegisterInteractive(interactionType slack.InteractionType, filterI
 }
 
 func (b *Bot) RegisterSelectOptions(actionId string, callback SelectMenuOptionsCallback) {
-	b.getLogger().Debugf("RegisterSelectOptions %s", actionId)
+	b.Logger().Debugf("RegisterSelectOptions %s", actionId)
 
 	b.registerSelectOptions(actionId, callback)
 }
 
 func (b *Bot) RegisterSelectOptionGroups(actionId string, callback SelectMenuOptionsGroupCallback) {
-	b.getLogger().Debugf("RegisterSelectOptions %s", actionId)
+	b.Logger().Debugf("RegisterSelectOptions %s", actionId)
 
 	b.registerSelectOptions(actionId, callback)
 }
@@ -152,7 +154,7 @@ func (b *Bot) Boot(listenAddr string) error {
 }
 
 func (b *Bot) BootWithEngine(listenAddr string, engine *gin.Engine) error {
-	b.getLogger().Infof("Booting slackbot on %s", listenAddr)
+	b.Logger().Infof("Booting slackbot on %s", listenAddr)
 
 	b.Lock()
 	defer b.Unlock()
@@ -170,7 +172,7 @@ func (b *Bot) BootWithEngine(listenAddr string, engine *gin.Engine) error {
 
 	go func() {
 		if err := b.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			b.getLogger().WithError(err).Fatalln("Failed to start server")
+			b.Logger().WithError(err).Fatalln("Failed to start server")
 		}
 	}()
 
@@ -178,7 +180,7 @@ func (b *Bot) BootWithEngine(listenAddr string, engine *gin.Engine) error {
 }
 
 func (b *Bot) prepareEngine(engine *gin.Engine, verify bool) {
-	engine.Use(ginlogrus.Logger(b.getLogger()))
+	engine.Use(ginlogrus.Logger(b.Logger()))
 
 	slackGroup := engine.Group("/slack")
 	if verify {
@@ -197,21 +199,23 @@ func (b *Bot) wireCallbacks(group *gin.RouterGroup) {
 
 func (b *Bot) wireCommands(group *gin.RouterGroup) {
 	for name, callback := range b.commands {
-		b.getLogger().Infof("Wired command \"%s\" to %s/commands/%s", name, group.BasePath(), name)
+		b.Logger().Infof("Wired command \"%s\" to %s/commands/%s", name, group.BasePath(), name)
 		group.POST("/commands/"+name, b.newCommandHandler(callback))
 	}
 }
 
 func (b *Bot) wireEvents(group *gin.RouterGroup) {
-	b.getLogger().Infof("Wired events %s/events", group.BasePath())
+	b.Logger().Infof("Wired events to %s/events", group.BasePath())
 	group.POST("/events", b.newEventHandler(b.events))
 }
 
 func (b *Bot) wireInteractives(group *gin.RouterGroup) {
-
+	b.Logger().Infof("Wired interactives to %s/interactives", group.BasePath())
+	//group.POST("/interactives", b.newInteractiveHandler(b.interactives))
 }
 
 func (b *Bot) wireSelectMenus(group *gin.RouterGroup) {
+	b.Logger().Infof("Wired select menus to %s/menus", group.BasePath())
 
 }
 
@@ -226,7 +230,7 @@ func (b *Bot) Shutdown() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := b.server.Shutdown(ctx); err != nil {
-		b.getLogger().WithError(err).Fatalln("Server forced to shutdown")
+		b.Logger().WithError(err).Fatalln("Server forced to shutdown")
 	}
 
 	b.server = nil

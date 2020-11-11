@@ -5,15 +5,15 @@ import (
 	"github.com/slack-go/slack"
 	"os"
 	"os/signal"
-	"slackbot/slackbot"
+	"slackbot"
 	"syscall"
 )
 
 // Boot a bot with a slash command that echos Hello World!
 func main() {
-	bot := slackbot.NewBot("bot token", "signing secret")
+	bot := slackbot.NewBot(os.Getenv("SLACK_TOKEN"), os.Getenv("SLACK_SIGNING_SECRET"))
 
-	// register commands
+	// register command
 	bot.RegisterCommand("test", testCommandHandler)
 
 	// boot the bot
@@ -34,5 +34,5 @@ func main() {
 
 func testCommandHandler(bot *slackbot.Bot, command slack.SlashCommand) *slack.Msg {
 	logrus.Info(command)
-	return &slack.Msg{Text: "Hello World!"} // return nil to not post a message
+	return &slack.Msg{Text: "Hello World!"} // return nil for no reply
 }
