@@ -145,13 +145,13 @@ func newMessageEvent(text string) slackevents.EventsAPIEvent {
 func TestRegisterInteractive(t *testing.T) {
 	bot := newBot()
 
-	testCallback1 := func(b *Bot, interaction slack.InteractionCallback) {}
-	bot.RegisterInteractive(slack.InteractionTypeBlockActions, "test_action_1", testCallback1)
-	assert.Equal(t, reflect.ValueOf(testCallback1).Pointer(), reflect.ValueOf(bot.interactives[slack.InteractionTypeBlockActions]["test_action_1"]).Pointer())
+	testCallback1 := func(bot *Bot, interaction slack.InteractionCallback) (response interface{}) { return nil }
+	bot.registerInteractive(slack.InteractionTypeBlockActions, testCallback1)
+	assert.Equal(t, reflect.ValueOf(testCallback1).Pointer(), reflect.ValueOf(bot.interactives[slack.InteractionTypeBlockActions][0]).Pointer())
 
-	testCallback2 := func(b *Bot, interaction slack.InteractionCallback) {}
-	bot.RegisterInteractive(slack.InteractionTypeBlockActions, "test_action_2", testCallback2)
-	assert.Equal(t, reflect.ValueOf(testCallback2).Pointer(), reflect.ValueOf(bot.interactives[slack.InteractionTypeBlockActions]["test_action_2"]).Pointer())
+	testCallback2 := func(bot *Bot, interaction slack.InteractionCallback) (response interface{}) { return nil }
+	bot.registerInteractive(slack.InteractionTypeBlockActions, testCallback2)
+	assert.Equal(t, reflect.ValueOf(testCallback2).Pointer(), reflect.ValueOf(bot.interactives[slack.InteractionTypeBlockActions][1]).Pointer())
 }
 
 func TestRegisterSelectOptions(t *testing.T) {

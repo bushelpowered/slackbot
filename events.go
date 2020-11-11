@@ -63,6 +63,5 @@ func (b *Bot) Register{{ $event }}(callback {{ $event }}Callback) {
 		callback(b, {{ $event }}Container{APIEvent: event, Event: *e})
 	})
 }
-
-{{- end }}
+{{ end }}
 `

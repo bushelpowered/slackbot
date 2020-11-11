@@ -18,7 +18,7 @@ import (
 type CommandCallback = func(bot *Bot, command slack.SlashCommand) *slack.Msg
 type EventCallback = func(bot *Bot, event slackevents.EventsAPIEvent)
 type KeywordCallback = func(bot *Bot, command MessageEventContainer)
-type InteractiveCallback = func(bot *Bot, interaction slack.InteractionCallback)
+type InteractiveCallback = func(bot *Bot, interaction slack.InteractionCallback) (response interface{})
 type SelectMenuOptionsCallback = func(bot *Bot) slack.OptionsResponse
 type SelectMenuOptionsGroupCallback = func(bot *Bot) slack.OptionGroupsResponse
 
@@ -31,10 +31,10 @@ type Bot struct {
 
 	commands      map[string]CommandCallback
 	events        map[string][]EventCallback
-	interactives  map[slack.InteractionType]map[string]InteractiveCallback
+	interactives  map[slack.InteractionType][]InteractiveCallback
 	selectOptions map[string]interface{}
 
-	sync.Mutex
+	sync.RWMutex
 }
 
 func NewBot(token string, signingSecret string) *Bot {
@@ -108,19 +108,19 @@ func newKeywordEventCallback(regex *regexp.Regexp, callback KeywordCallback) Eve
 	}
 }
 
-func (b *Bot) RegisterInteractive(interactionType slack.InteractionType, filterId string, callback InteractiveCallback) {
-	b.Logger().Debugf("RegisterInteractive %s:%s", interactionType, filterId)
+func (b *Bot) registerInteractive(interactionType slack.InteractionType, callback InteractiveCallback) {
+	b.Logger().Debugf("RegisterInteractive %s", interactionType)
 
 	b.Lock()
 	defer b.Unlock()
 
 	if b.interactives == nil {
-		b.interactives = make(map[slack.InteractionType]map[string]InteractiveCallback)
+		b.interactives = make(map[slack.InteractionType][]InteractiveCallback)
 	}
 	if _, exists := b.interactives[interactionType]; !exists {
-		b.interactives[interactionType] = make(map[string]InteractiveCallback)
+		b.interactives[interactionType] = make([]InteractiveCallback, 0)
 	}
-	b.interactives[interactionType][filterId] = callback
+	b.interactives[interactionType] = append(b.interactives[interactionType], callback)
 }
 
 func (b *Bot) RegisterSelectOptions(actionId string, callback SelectMenuOptionsCallback) {
@@ -206,12 +206,12 @@ func (b *Bot) wireCommands(group *gin.RouterGroup) {
 
 func (b *Bot) wireEvents(group *gin.RouterGroup) {
 	b.Logger().Infof("Wired events to %s/events", group.BasePath())
-	group.POST("/events", b.newEventHandler(b.events))
+	group.POST("/events", b.newEventHandler())
 }
 
 func (b *Bot) wireInteractives(group *gin.RouterGroup) {
 	b.Logger().Infof("Wired interactives to %s/interactives", group.BasePath())
-	//group.POST("/interactives", b.newInteractiveHandler(b.interactives))
+	group.POST("/interactives", b.newInteractiveHandler())
 }
 
 func (b *Bot) wireSelectMenus(group *gin.RouterGroup) {
