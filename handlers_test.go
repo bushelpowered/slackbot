@@ -246,3 +246,107 @@ func TestInteractiveHandlerWithNoHandlers(t *testing.T) {
 		Expect().
 		Status(http.StatusOK).NoContent()
 }
+
+func TestSelectMenuOptionsHandlerWithNoPayload(t *testing.T) {
+	engine := gin.New()
+
+	bot := newBot()
+	bot.prepareEngine(engine, false)
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/menus").
+		Expect().
+		Status(http.StatusBadRequest).NoContent()
+}
+
+func TestSelectMenuOptionsHandlerWithBadPayload(t *testing.T) {
+	engine := gin.New()
+
+	bot := newBot()
+	bot.prepareEngine(engine, false)
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/menus").
+		WithFormField("payload", "not json").
+		Expect().
+		Status(http.StatusBadRequest).NoContent()
+}
+
+func TestSelectMenuOptionsHandlerWithBadType(t *testing.T) {
+	engine := gin.New()
+
+	bot := newBot()
+	bot.prepareEngine(engine, false)
+
+	payload, _ := json.Marshal(slack.InteractionCallback{
+		Type:       "not a real type",
+		CallbackID: "callback1",
+	})
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/menus").
+		WithFormField("payload", string(payload)).
+		Expect().
+		Status(http.StatusBadRequest).NoContent()
+}
+
+func TestSelectOptionsHandlerWithOptions(t *testing.T) {
+	engine := gin.New()
+
+	bot := newBot()
+	bot.RegisterSelectOptions("callback1", func(bot *Bot) slack.OptionsResponse {
+		return slack.OptionsResponse{Options: []*slack.OptionBlockObject{&slack.OptionBlockObject{Value: "callback1"}}}
+	})
+	bot.prepareEngine(engine, false)
+
+	payload, _ := json.Marshal(slack.InteractionCallback{
+		Type:       slack.InteractionTypeInteractionMessage,
+		CallbackID: "callback1",
+	})
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/menus").
+		WithFormField("payload", string(payload)).
+		Expect().
+		Status(http.StatusOK).JSON().Object().Value("options").Array().First().Object().ValueEqual("value", "callback1")
+}
+
+func TestSelectOptionsHandlerWithOptionsGroup(t *testing.T) {
+	engine := gin.New()
+
+	bot := newBot()
+	bot.RegisterSelectOptionGroups("callback1", func(bot *Bot) slack.OptionGroupsResponse {
+		return slack.OptionGroupsResponse{OptionGroups: []*slack.OptionGroupBlockObject{&slack.OptionGroupBlockObject{Options: []*slack.OptionBlockObject{&slack.OptionBlockObject{Value: "callback1"}}}}}
+	})
+	bot.prepareEngine(engine, false)
+
+	payload, _ := json.Marshal(slack.InteractionCallback{
+		Type:       slack.InteractionTypeInteractionMessage,
+		CallbackID: "callback1",
+	})
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/menus").
+		WithFormField("payload", string(payload)).
+		Expect().
+		Status(http.StatusOK).JSON().Object().Value("option_groups").Array().First().Object().Value("options").Array().First().Object().ValueEqual("value", "callback1")
+}
+
+func TestSelectOptionsHandlerWithBadCallback(t *testing.T) {
+	engine := gin.New()
+
+	bot := newBot()
+	bot.registerSelectOptions("callback1", func() {})
+	bot.prepareEngine(engine, false)
+
+	payload, _ := json.Marshal(slack.InteractionCallback{
+		Type:       slack.InteractionTypeInteractionMessage,
+		CallbackID: "callback1",
+	})
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/menus").
+		WithFormField("payload", string(payload)).
+		Expect().
+		Status(http.StatusInternalServerError).NoContent()
+}

@@ -113,3 +113,43 @@ func (b *Bot) newInteractiveHandler() gin.HandlerFunc {
 		ctx.Status(http.StatusOK)
 	}
 }
+
+func (b *Bot) newSelectMenusHandler() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		payload := ctx.PostForm("payload")
+		if payload == "" {
+			_ = ctx.AbortWithError(http.StatusBadRequest, ErrEmptyPayload)
+			return
+		}
+
+		var interactionCallback slack.InteractionCallback
+		err := json.Unmarshal([]byte(payload), &interactionCallback)
+		if err != nil {
+			_ = ctx.AbortWithError(http.StatusBadRequest, ErrBadPayload)
+			return
+		}
+
+		if interactionCallback.Type != slack.InteractionTypeInteractionMessage {
+			_ = ctx.AbortWithError(http.StatusBadRequest, ErrBadPayload)
+			return
+		}
+
+		b.RLock()
+		defer b.RUnlock()
+		callback, exists := b.selectOptions[interactionCallback.CallbackID]
+		if exists {
+			switch cb := callback.(type) {
+			case SelectMenuOptionsCallback:
+				response := cb(b)
+				ctx.JSON(http.StatusOK, response)
+				return
+			case SelectMenuOptionsGroupCallback:
+				response := cb(b)
+				ctx.JSON(http.StatusOK, response)
+				return
+			}
+		}
+
+		_ = ctx.AbortWithError(http.StatusInternalServerError, ErrUnknownOptionsCallback)
+	}
+}

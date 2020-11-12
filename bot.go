@@ -216,7 +216,7 @@ func (b *Bot) wireInteractives(group *gin.RouterGroup) {
 
 func (b *Bot) wireSelectMenus(group *gin.RouterGroup) {
 	b.Logger().Infof("Wired select menus to %s/menus", group.BasePath())
-
+	group.POST("/menus", b.newSelectMenusHandler())
 }
 
 func (b *Bot) Shutdown() {
