@@ -14,7 +14,7 @@ func main() {
 	bot := slackbot.NewBot(os.Getenv("SLACK_TOKEN"), os.Getenv("SLACK_SIGNING_SECRET"))
 
 	// register interaction
-	bot.RegisterShortcutInteraction("test_id", testShortcutInteraction)
+	bot.RegisterShortcutInteraction("test_id", exampleShortcutInteractionCallback)
 
 	// boot the bot
 	err := bot.Boot(":8000")
@@ -32,6 +32,6 @@ func main() {
 	logrus.Infoln("Shutting down...")
 }
 
-func testShortcutInteraction(bot *slackbot.Bot, event slack.InteractionCallback) {
+func exampleShortcutInteractionCallback(bot *slackbot.Bot, event slack.InteractionCallback) {
 	logrus.Infoln(event)
 }

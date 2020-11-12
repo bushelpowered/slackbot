@@ -15,7 +15,7 @@ func main() {
 
 	// register keywords
 	keyword, _ := regexp.Compile("(?i)fire") // case insensitive "fire"
-	bot.RegisterKeyword(keyword, testKeywordHandler)
+	bot.RegisterKeyword(keyword, exampleKeywordCallback)
 
 	// boot the bot
 	err := bot.Boot(":8000")
@@ -33,6 +33,6 @@ func main() {
 	logrus.Infoln("Shutting down...")
 }
 
-func testKeywordHandler(bot *slackbot.Bot, container slackbot.MessageEventContainer) {
-	logrus.Infoln(container.Event.Text)
+func exampleKeywordCallback(bot *slackbot.Bot, container slackbot.MessageEventContainer) {
+	logrus.Infoln(container)
 }

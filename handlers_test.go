@@ -64,7 +64,7 @@ func TestEventHandlerErrorsWithNoContent(t *testing.T) {
 	engine := gin.New()
 
 	bot := newBot()
-	bot.RegisterEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
+	bot.registerEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
 
 	})
 	bot.prepareEngine(engine, false)
@@ -81,7 +81,7 @@ func TestEventHandlerUrlVerification(t *testing.T) {
 	engine := gin.New()
 
 	bot := newBot()
-	bot.RegisterEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
+	bot.registerEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
 
 	})
 	bot.prepareEngine(engine, false)
@@ -103,7 +103,7 @@ func TestEventHandlerSingleCallback(t *testing.T) {
 	engine := gin.New()
 
 	bot := newBot()
-	bot.RegisterEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
+	bot.registerEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
 		hitCallbackOne = true
 	})
 	bot.prepareEngine(engine, false)
@@ -124,10 +124,10 @@ func TestEventHandlerHitsAllCallbacksOfTheSameType(t *testing.T) {
 	engine := gin.New()
 
 	bot := newBot()
-	bot.RegisterEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
+	bot.registerEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
 		hitCallbackOne = true
 	})
-	bot.RegisterEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
+	bot.registerEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
 		hitCallbackTwo = true
 	})
 	bot.prepareEngine(engine, false)
@@ -149,10 +149,10 @@ func TestEventHandlerHitsCorrectCallback(t *testing.T) {
 	engine := gin.New()
 
 	bot := newBot()
-	bot.RegisterEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
+	bot.registerEvent(slackevents.AppMention, func(bot *Bot, event slackevents.EventsAPIEvent) {
 		hitCallbackOne = true
 	})
-	bot.RegisterEvent(slackevents.Message, func(bot *Bot, event slackevents.EventsAPIEvent) {
+	bot.registerEvent(slackevents.Message, func(bot *Bot, event slackevents.EventsAPIEvent) {
 		hitCallbackTwo = true
 	})
 	bot.prepareEngine(engine, false)
@@ -294,8 +294,8 @@ func TestSelectOptionsHandlerWithOptions(t *testing.T) {
 	engine := gin.New()
 
 	bot := newBot()
-	bot.RegisterSelectOptions("callback1", func(bot *Bot) slack.OptionsResponse {
-		return slack.OptionsResponse{Options: []*slack.OptionBlockObject{&slack.OptionBlockObject{Value: "callback1"}}}
+	bot.RegisterSelectOptions("callback1", func(bot *Bot, interaction slack.InteractionCallback) slack.OptionsResponse {
+		return slack.OptionsResponse{Options: []*slack.OptionBlockObject{{Value: "callback1"}}}
 	})
 	bot.prepareEngine(engine, false)
 
@@ -315,8 +315,8 @@ func TestSelectOptionsHandlerWithOptionsGroup(t *testing.T) {
 	engine := gin.New()
 
 	bot := newBot()
-	bot.RegisterSelectOptionGroups("callback1", func(bot *Bot) slack.OptionGroupsResponse {
-		return slack.OptionGroupsResponse{OptionGroups: []*slack.OptionGroupBlockObject{&slack.OptionGroupBlockObject{Options: []*slack.OptionBlockObject{&slack.OptionBlockObject{Value: "callback1"}}}}}
+	bot.RegisterSelectOptionGroups("callback1", func(bot *Bot, interaction slack.InteractionCallback) slack.OptionGroupsResponse {
+		return slack.OptionGroupsResponse{OptionGroups: []*slack.OptionGroupBlockObject{{Options: []*slack.OptionBlockObject{{Value: "callback1"}}}}}
 	})
 	bot.prepareEngine(engine, false)
 

@@ -80,15 +80,15 @@ func TestRegisterEvent(t *testing.T) {
 	bot := newBot()
 
 	test1Callback := func(b *Bot, event slackevents.EventsAPIEvent) {}
-	bot.RegisterEvent(slackevents.Message, test1Callback)
+	bot.registerEvent(slackevents.Message, test1Callback)
 	assert.Equal(t, reflect.ValueOf(test1Callback).Pointer(), reflect.ValueOf(bot.events[slackevents.Message][0]).Pointer())
 
 	test2Callback := func(b *Bot, event slackevents.EventsAPIEvent) {}
-	bot.RegisterEvent(slackevents.Message, test2Callback)
+	bot.registerEvent(slackevents.Message, test2Callback)
 	assert.Equal(t, reflect.ValueOf(test2Callback).Pointer(), reflect.ValueOf(bot.events[slackevents.Message][1]).Pointer())
 
 	test3Callback := func(b *Bot, event slackevents.EventsAPIEvent) {}
-	bot.RegisterEvent(slackevents.AppMention, test3Callback)
+	bot.registerEvent(slackevents.AppMention, test3Callback)
 	assert.Equal(t, reflect.ValueOf(test3Callback).Pointer(), reflect.ValueOf(bot.events[slackevents.AppMention][0]).Pointer())
 }
 
@@ -157,13 +157,13 @@ func TestRegisterInteractive(t *testing.T) {
 func TestRegisterSelectOptions(t *testing.T) {
 	bot := newBot()
 
-	options1 := func(b *Bot) slack.OptionsResponse {
+	options1 := func(b *Bot, interaction slack.InteractionCallback) slack.OptionsResponse {
 		return slack.OptionsResponse{}
 	}
 	bot.RegisterSelectOptions("action_1", options1)
 	assert.Equal(t, reflect.ValueOf(options1).Pointer(), reflect.ValueOf(bot.selectOptions["action_1"]).Pointer())
 
-	options2 := func(b *Bot) slack.OptionsResponse {
+	options2 := func(b *Bot, interaction slack.InteractionCallback) slack.OptionsResponse {
 		return slack.OptionsResponse{}
 	}
 	bot.RegisterSelectOptions("action_2", options2)
@@ -173,13 +173,13 @@ func TestRegisterSelectOptions(t *testing.T) {
 func TestRegisterSelectOptionGroups(t *testing.T) {
 	bot := newBot()
 
-	options1 := func(b *Bot) slack.OptionGroupsResponse {
+	options1 := func(b *Bot, interaction slack.InteractionCallback) slack.OptionGroupsResponse {
 		return slack.OptionGroupsResponse{}
 	}
 	bot.RegisterSelectOptionGroups("action_1", options1)
 	assert.Equal(t, reflect.ValueOf(options1).Pointer(), reflect.ValueOf(bot.selectOptions["action_1"]).Pointer())
 
-	options2 := func(b *Bot) slack.OptionGroupsResponse {
+	options2 := func(b *Bot, interaction slack.InteractionCallback) slack.OptionGroupsResponse {
 		return slack.OptionGroupsResponse{}
 	}
 	bot.RegisterSelectOptionGroups("action_2", options2)

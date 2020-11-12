@@ -14,7 +14,7 @@ func main() {
 	bot := slackbot.NewBot(os.Getenv("SLACK_TOKEN"), os.Getenv("SLACK_SIGNING_SECRET"))
 
 	// register command
-	bot.RegisterCommand("test", testCommandHandler)
+	bot.RegisterCommand("test", exampleCommandCallback)
 
 	// boot the bot
 	err := bot.Boot(":8000")
@@ -32,7 +32,7 @@ func main() {
 	logrus.Infoln("Shutting down...")
 }
 
-func testCommandHandler(bot *slackbot.Bot, command slack.SlashCommand) *slack.Msg {
+func exampleCommandCallback(bot *slackbot.Bot, command slack.SlashCommand) *slack.Msg {
 	logrus.Info(command)
 	return &slack.Msg{Text: "Hello World!"} // return nil for no reply
 }

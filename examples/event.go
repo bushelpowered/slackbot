@@ -13,7 +13,7 @@ func main() {
 	bot := slackbot.NewBot(os.Getenv("SLACK_TOKEN"), os.Getenv("SLACK_SIGNING_SECRET"))
 
 	// register events
-	bot.RegisterAppMentionEvent(testAppMentionHandler)
+	bot.RegisterAppMentionEvent(exampleAppMentionEventCallback)
 
 	// boot the bot
 	err := bot.Boot(":8000")
@@ -31,6 +31,6 @@ func main() {
 	logrus.Infoln("Shutting down...")
 }
 
-func testAppMentionHandler(bot *slackbot.Bot, c slackbot.AppMentionEventContainer) {
+func exampleAppMentionEventCallback(bot *slackbot.Bot, c slackbot.AppMentionEventContainer) {
 	logrus.Infoln(c.Event)
 }

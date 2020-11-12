@@ -140,11 +140,11 @@ func (b *Bot) newSelectMenusHandler() gin.HandlerFunc {
 		if exists {
 			switch cb := callback.(type) {
 			case SelectMenuOptionsCallback:
-				response := cb(b)
+				response := cb(b, interactionCallback)
 				ctx.JSON(http.StatusOK, response)
 				return
 			case SelectMenuOptionsGroupCallback:
-				response := cb(b)
+				response := cb(b, interactionCallback)
 				ctx.JSON(http.StatusOK, response)
 				return
 			}

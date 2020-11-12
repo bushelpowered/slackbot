@@ -16,11 +16,11 @@ import (
 //go:generate go run events.go
 
 type CommandCallback = func(bot *Bot, command slack.SlashCommand) *slack.Msg
-type EventCallback = func(bot *Bot, event slackevents.EventsAPIEvent)
-type KeywordCallback = func(bot *Bot, command MessageEventContainer)
-type InteractiveCallback = func(bot *Bot, interaction slack.InteractionCallback) (response interface{})
-type SelectMenuOptionsCallback = func(bot *Bot) slack.OptionsResponse
-type SelectMenuOptionsGroupCallback = func(bot *Bot) slack.OptionGroupsResponse
+type eventCallback = func(bot *Bot, event slackevents.EventsAPIEvent)
+type KeywordCallback = func(bot *Bot, container MessageEventContainer)
+type interactiveCallback = func(bot *Bot, interaction slack.InteractionCallback) (response interface{})
+type SelectMenuOptionsCallback = func(bot *Bot, interaction slack.InteractionCallback) slack.OptionsResponse
+type SelectMenuOptionsGroupCallback = func(bot *Bot, interaction slack.InteractionCallback) slack.OptionGroupsResponse
 
 type Bot struct {
 	token         string
@@ -30,8 +30,8 @@ type Bot struct {
 	logger *logrus.Logger
 
 	commands      map[string]CommandCallback
-	events        map[string][]EventCallback
-	interactives  map[slack.InteractionType][]InteractiveCallback
+	events        map[string][]eventCallback
+	interactives  map[slack.InteractionType][]interactiveCallback
 	selectOptions map[string]interface{}
 
 	sync.RWMutex
@@ -79,14 +79,14 @@ func (b *Bot) RegisterCommand(name string, callback CommandCallback) {
 	b.commands[name] = callback
 }
 
-func (b *Bot) RegisterEvent(eventType string, callback EventCallback) {
+func (b *Bot) registerEvent(eventType string, callback eventCallback) {
 	b.Logger().Debugf("RegisterEvent %s", eventType)
 
 	b.Lock()
 	defer b.Unlock()
 
 	if b.events == nil {
-		b.events = make(map[string][]EventCallback)
+		b.events = make(map[string][]eventCallback)
 	}
 	b.events[eventType] = append(b.events[eventType], callback)
 }
@@ -94,10 +94,10 @@ func (b *Bot) RegisterEvent(eventType string, callback EventCallback) {
 func (b *Bot) RegisterKeyword(regex *regexp.Regexp, callback KeywordCallback) {
 	b.Logger().Debugf("RegisterKeyword %s", regex)
 
-	b.RegisterEvent(slackevents.Message, newKeywordEventCallback(regex, callback))
+	b.registerEvent(slackevents.Message, newKeywordEventCallback(regex, callback))
 }
 
-func newKeywordEventCallback(regex *regexp.Regexp, callback KeywordCallback) EventCallback {
+func newKeywordEventCallback(regex *regexp.Regexp, callback KeywordCallback) eventCallback {
 	return func(b *Bot, event slackevents.EventsAPIEvent) {
 		switch ev := event.InnerEvent.Data.(type) {
 		case *slackevents.MessageEvent:
@@ -108,34 +108,34 @@ func newKeywordEventCallback(regex *regexp.Regexp, callback KeywordCallback) Eve
 	}
 }
 
-func (b *Bot) registerInteractive(interactionType slack.InteractionType, callback InteractiveCallback) {
+func (b *Bot) registerInteractive(interactionType slack.InteractionType, callback interactiveCallback) {
 	b.Logger().Debugf("RegisterInteractive %s", interactionType)
 
 	b.Lock()
 	defer b.Unlock()
 
 	if b.interactives == nil {
-		b.interactives = make(map[slack.InteractionType][]InteractiveCallback)
+		b.interactives = make(map[slack.InteractionType][]interactiveCallback)
 	}
 	if _, exists := b.interactives[interactionType]; !exists {
-		b.interactives[interactionType] = make([]InteractiveCallback, 0)
+		b.interactives[interactionType] = make([]interactiveCallback, 0)
 	}
 	b.interactives[interactionType] = append(b.interactives[interactionType], callback)
 }
 
-func (b *Bot) RegisterSelectOptions(actionId string, callback SelectMenuOptionsCallback) {
-	b.Logger().Debugf("RegisterSelectOptions %s", actionId)
+func (b *Bot) RegisterSelectOptions(callbackId string, callback SelectMenuOptionsCallback) {
+	b.Logger().Debugf("RegisterSelectOptions %s", callbackId)
 
-	b.registerSelectOptions(actionId, callback)
+	b.registerSelectOptions(callbackId, callback)
 }
 
-func (b *Bot) RegisterSelectOptionGroups(actionId string, callback SelectMenuOptionsGroupCallback) {
-	b.Logger().Debugf("RegisterSelectOptions %s", actionId)
+func (b *Bot) RegisterSelectOptionGroups(callbackId string, callback SelectMenuOptionsGroupCallback) {
+	b.Logger().Debugf("RegisterSelectOptions %s", callbackId)
 
-	b.registerSelectOptions(actionId, callback)
+	b.registerSelectOptions(callbackId, callback)
 }
 
-func (b *Bot) registerSelectOptions(actionId string, callback interface{}) {
+func (b *Bot) registerSelectOptions(callbackId string, callback interface{}) {
 	b.Lock()
 	defer b.Unlock()
 
@@ -143,7 +143,7 @@ func (b *Bot) registerSelectOptions(actionId string, callback interface{}) {
 		b.selectOptions = make(map[string]interface{})
 	}
 
-	b.selectOptions[actionId] = callback
+	b.selectOptions[callbackId] = callback
 }
 
 func (b *Bot) Boot(listenAddr string) error {
