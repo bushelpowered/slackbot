@@ -1,12 +1,13 @@
 package main
 
 import (
+	"github.com/bushelpowered/slackbot"
 	"github.com/sirupsen/logrus"
 	"github.com/slack-go/slack"
 	"os"
 	"os/signal"
-	"slackbot"
 	"syscall"
+	"time"
 )
 
 // Boot a bot with a slash command that echos Hello World!
@@ -22,7 +23,7 @@ func main() {
 		logrus.WithError(err).Fatalln("Failed to start bot")
 		return
 	}
-	defer bot.Shutdown()
+	defer bot.Shutdown(time.Second * 10)
 
 	// wait for exit
 	quit := make(chan os.Signal)

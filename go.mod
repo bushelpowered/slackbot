@@ -1,6 +1,6 @@
-module slackbot
+module github.com/bushelpowered/slackbot
 
-go 1.15
+go 1.14
 
 require (
 	github.com/gavv/httpexpect/v2 v2.1.0

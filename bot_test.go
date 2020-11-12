@@ -42,13 +42,13 @@ func TestSetLogger(t *testing.T) {
 	newLogger := logrus.New()
 	bot.SetLogger(newLogger)
 
-	assert.Equal(t, newLogger, bot.logger)
+	assert.Equal(t, newLogger, bot.log)
 }
 
 func TestGetLoggerReturnsStandardLoggerWhenUnset(t *testing.T) {
 	bot := newBot()
 
-	assert.Equal(t, logrus.StandardLogger(), bot.Logger())
+	assert.Equal(t, logrus.StandardLogger(), bot.logger())
 }
 
 func TestGetLoggerReturnsSetLogger(t *testing.T) {
@@ -57,7 +57,7 @@ func TestGetLoggerReturnsSetLogger(t *testing.T) {
 	newLogger := logrus.New()
 	bot.SetLogger(newLogger)
 
-	assert.Equal(t, newLogger, bot.Logger())
+	assert.Equal(t, newLogger, bot.logger())
 }
 
 func TestRegisterCommand(t *testing.T) {
@@ -105,12 +105,14 @@ func TestKeywordCallbackMatch(t *testing.T) {
 	keyword, _ := regexp.Compile("keyword")
 	text := "this text contains the keyword"
 
+	bot := newBot()
+
 	matched := false
-	callback := newKeywordEventCallback(keyword, func(b *Bot, event MessageEventContainer) {
+	callback := bot.newKeywordEventCallback(keyword, func(b *Bot, event MessageEventContainer) {
 		matched = true
 	})
 
-	callback(newBot(), newMessageEvent(text))
+	callback(bot, newMessageEventContainer(text))
 
 	assert.True(t, matched)
 }
@@ -119,12 +121,14 @@ func TestKeywordCallbackMiss(t *testing.T) {
 	keyword, _ := regexp.Compile("keyword")
 	text := "this text does not contain the special word"
 
+	bot := newBot()
+
 	matched := false
-	callback := newKeywordEventCallback(keyword, func(b *Bot, event MessageEventContainer) {
+	callback := bot.newKeywordEventCallback(keyword, func(b *Bot, event MessageEventContainer) {
 		matched = true
 	})
 
-	callback(newBot(), newMessageEvent(text))
+	callback(bot, newMessageEventContainer(text))
 
 	assert.False(t, matched)
 }
@@ -140,6 +144,12 @@ func newMessageEvent(text string) slackevents.EventsAPIEvent {
 			},
 		},
 	}
+}
+
+func newMessageEventContainer(text string) MessageEventContainer {
+	messageEvent := newMessageEvent(text)
+	event := messageEvent.InnerEvent.Data.(*slackevents.MessageEvent)
+	return MessageEventContainer{APIEvent: messageEvent, Event: *event}
 }
 
 func TestRegisterInteractive(t *testing.T) {
@@ -190,7 +200,7 @@ func TestBoot(t *testing.T) {
 	bot := newBot()
 
 	err := bot.Boot(":51356")
-	defer bot.Shutdown()
+	defer bot.Shutdown(time.Second * 10)
 	assert.NoError(t, err)
 
 	err = bot.Boot(":51356")
@@ -205,5 +215,5 @@ func TestBoot(t *testing.T) {
 		_ = resp.Body.Close()
 	}
 
-	bot.Shutdown()
+	bot.Shutdown(time.Second * 10)
 }

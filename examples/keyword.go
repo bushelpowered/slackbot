@@ -1,12 +1,13 @@
 package main
 
 import (
+	"github.com/bushelpowered/slackbot"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 	"regexp"
-	"slackbot"
 	"syscall"
+	"time"
 )
 
 // Boot a bot that listens for the keyword "fire"
@@ -23,7 +24,7 @@ func main() {
 		logrus.WithError(err).Fatalln("Failed to start bot")
 		return
 	}
-	defer bot.Shutdown()
+	defer bot.Shutdown(time.Second * 10)
 
 	// wait for exit
 	quit := make(chan os.Signal)

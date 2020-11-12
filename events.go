@@ -57,6 +57,7 @@ type {{ $event }}Container struct {
 
 type {{ $event }}Callback = func(bot *Bot, c {{ $event }}Container)
 
+// Register a callback for {{ $key }} events
 func (b *Bot) Register{{ $event }}(callback {{ $event }}Callback) {
 	b.registerEvent("{{ $key }}", func(bot *Bot, event slackevents.EventsAPIEvent) {
 		e := event.InnerEvent.Data.(*slackevents.{{ $event }})
