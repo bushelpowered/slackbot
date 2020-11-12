@@ -1,6 +1,6 @@
 [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/bushelpowered/slackbot/CI/master)](https://github.com/bushelpowered/slackbot/actions?query=branch%3Amaster+workflow%3ACI)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bushelpowered/slackbot)](https://goreportcard.com/report/github.com/bushelpowered/slackbot)
-![Go Version](https://img.shields.io/github/go-mod/go-version/bushelpowered/slackbot)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/bushelpowered/slackbot?label=stable)
 [![PkgGoDev](https://pkg.go.dev/badge/mod/github.com/bushelpowered/slackbot)](https://pkg.go.dev/mod/github.com/bushelpowered/slackbot)
 
 # Slackbot
