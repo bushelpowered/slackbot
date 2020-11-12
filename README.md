@@ -34,11 +34,11 @@ import (
 	"time"
 )
 
-// Boot a bot with a slash command that echos Hello World!
+// Boot a bot with a slash command that posts "Hello World!" and message listener.
 func main() {
 	bot := slackbot.NewBot(os.Getenv("SLACK_TOKEN"), os.Getenv("SLACK_SIGNING_SECRET"))
 
-	// register a slach command
+	// register a slash command
 	bot.RegisterCommand("myslashcommand", func(bot *slackbot.Bot, command slack.SlashCommand) *slack.Msg {
 		log.Println(command.Text)
 		return &slack.Msg{Text: "Hello World!"} // return nil for no reply
