@@ -8,6 +8,7 @@ import (
 	"github.com/slack-go/slack/slackevents"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 )
 
 func (b *Bot) newCommandHandler(callback CommandCallback) gin.HandlerFunc {
@@ -101,7 +102,8 @@ func (b *Bot) newInteractiveHandler() gin.HandlerFunc {
 		if typeExists {
 			for _, callback := range callbacks {
 				response := callback(b, interactionCallback)
-				if response != nil {
+				isNilPtr := reflect.ValueOf(response).Kind() == reflect.Ptr && reflect.ValueOf(response).IsNil()
+				if response != nil && !isNilPtr {
 					ctx.JSON(http.StatusOK, response)
 					return
 				}

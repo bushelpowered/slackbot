@@ -1,6 +1,7 @@
 package slackbot
 
 import (
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
@@ -204,4 +205,44 @@ func newFakeEventWithData(eventType string, event interface{}) fakeEvent {
 type fakeEvent struct {
 	Type  string      `json:"type"`
 	Event interface{} `json:"event"`
+}
+
+func TestInteractiveHandlerWithNoPayload(t *testing.T) {
+	engine := gin.New()
+
+	bot := newBot()
+	bot.prepareEngine(engine, false)
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/interactives").
+		Expect().
+		Status(http.StatusBadRequest).NoContent()
+}
+
+func TestInteractiveHandlerWithBadPayload(t *testing.T) {
+	engine := gin.New()
+
+	bot := newBot()
+	bot.prepareEngine(engine, false)
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/interactives").
+		WithFormField("payload", "not json").
+		Expect().
+		Status(http.StatusBadRequest).NoContent()
+}
+
+func TestInteractiveHandlerWithNoHandlers(t *testing.T) {
+	engine := gin.New()
+
+	bot := newBot()
+	bot.prepareEngine(engine, false)
+
+	payload, _ := json.Marshal(slack.InteractionCallback{})
+
+	e := getHttpExpect(t, engine)
+	e.POST("/slack/interactives").
+		WithFormField("payload", string(payload)).
+		Expect().
+		Status(http.StatusOK).NoContent()
 }
